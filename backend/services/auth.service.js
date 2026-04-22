@@ -5,6 +5,7 @@ const {
   findUserByEmail,
   createUser,
   createDefaultWorkspace,
+  getDefaultWorkspaceId,
   sanitizeUser,
 } = require("../models/user.model");
 const {
@@ -53,7 +54,7 @@ const registerUser = async ({ name, email, password }) => {
   });
 
   // 5. Create default workspace
-  await createDefaultWorkspace({
+  const workspace = await createDefaultWorkspace({
     id: uuidv4(),
     userId: user.id,
     name: `${user.name}'s Workspace`,
@@ -64,6 +65,7 @@ const registerUser = async ({ name, email, password }) => {
     id: user.id,
     name: user.name,
     email: user.email,
+    workspaceId: workspace.id
   });
 
   return { token, user };
@@ -104,11 +106,15 @@ const loginUser = async ({ email, password }) => {
     throw createError(INVALID_CREDENTIALS_MSG, 401);
   }
 
+  const workspaceId = await getDefaultWorkspaceId(userRow.id);
+  console.log(workspaceId);
+
   // 4. Generate JWT
   const token = generateToken({
     id: userRow.id,
     name: userRow.name,
     email: userRow.email,
+    workspaceId
   });
 
   // 5. Strip password_hash before returning

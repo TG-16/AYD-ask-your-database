@@ -40,7 +40,7 @@ router.post('/register', register);
  */
 router.post('/login', login);
 router.post("/protecte", authenticateUser, (req, res) => {
-    return res.status(200).send("hello");
+    return res.status(200).send(req.user);
 })
 
 module.exports = router;

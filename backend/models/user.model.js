@@ -60,6 +60,27 @@ const createDefaultWorkspace = async ({ id, userId, name }) => {
   return rows[0];
 };
 
+
+/**
+ * find workspace by user id.
+ *
+ * Schema ref: workspaces(id, user_id, name, created_at)
+ *
+ * @param {{ id: string, userId: string, name: string }} params
+ * @returns {Promise<Object>} created workspace row
+ */
+const getDefaultWorkspaceId = async (userId) => {
+  const query = `
+    SELECT id 
+    FROM workspaces 
+    WHERE user_id = $1
+    LIMIT 1;
+  `;
+  const { rows } = await pool.query(query, [userId]);
+  console.log("model #########", rows);
+  return rows[0].id;
+};
+
 /**
  * Strip sensitive fields from a raw DB user row.
  * Always call this before including a user object in any API response.
@@ -78,5 +99,6 @@ module.exports = {
   findUserByEmail,
   createUser,
   createDefaultWorkspace,
+  getDefaultWorkspaceId,
   sanitizeUser,
 };

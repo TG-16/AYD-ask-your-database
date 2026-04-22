@@ -65,6 +65,7 @@ const authenticateUser = (req, res, next) => {
       id:    decoded.id,
       name:  decoded.name,
       email: decoded.email,
+      workspaceId: decoded.workspaceId,
     };
 
     // ── Step 6: Pass control to the next middleware / route handler ─────────
