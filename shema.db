@@ -1,0 +1,35 @@
+CREATE TABLE users (
+    id UUID PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE workspaces (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    name TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+
+
+CREATE TABLE datasets (
+    id UUID PRIMARY KEY,
+    workspace_id UUID REFERENCES workspaces(id),
+    table_name TEXT NOT NULL,
+    schema_json JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+
+
+CREATE TABLE query_history (
+    id UUID PRIMARY KEY,
+    workspace_id UUID REFERENCES workspaces(id),
+    natural_query TEXT,
+    generated_sql TEXT,
+    execution_time_ms INTEGER,
+    created_at TIMESTAMP DEFAULT NOW()
+);
