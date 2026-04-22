@@ -1,6 +1,7 @@
 // routes/auth.routes.js
 const { Router } = require('express');
 const { register, login } = require('../controllers/auth.controller');
+const { authenticateUser } = require("../middleware/auth.middleware");
 
 const router = Router();
 
@@ -38,6 +39,9 @@ router.post('/register', register);
  *   500  { success: false, message: "An unexpected error occurred. Please try again later." }
  */
 router.post('/login', login);
+router.post("/protecte", authenticateUser, (req, res) => {
+    return res.status(200).send("hello");
+})
 
 module.exports = router;
 

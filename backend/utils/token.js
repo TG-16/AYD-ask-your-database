@@ -5,7 +5,7 @@ const { createError } = require('./errors');
 /**
  * Generate a signed JWT for the given user payload.
  *
- * @param {{ id: string, email: string }} payload
+ * @param {{ id: string, name: string, email: string }} payload
  * @returns {string} signed JWT
  * @throws {Error} if JWT_SECRET is not set in environment
  */

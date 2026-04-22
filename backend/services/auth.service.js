@@ -60,7 +60,11 @@ const registerUser = async ({ name, email, password }) => {
   });
 
   // 6. Generate JWT
-  const token = generateToken({ id: user.id, email: user.email });
+  const token = generateToken({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+  });
 
   return { token, user };
 };
@@ -101,7 +105,11 @@ const loginUser = async ({ email, password }) => {
   }
 
   // 4. Generate JWT
-  const token = generateToken({ id: userRow.id, email: userRow.email });
+  const token = generateToken({
+    id: userRow.id,
+    name: userRow.name,
+    email: userRow.email,
+  });
 
   // 5. Strip password_hash before returning
   const user = sanitizeUser(userRow);
