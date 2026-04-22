@@ -1,19 +1,20 @@
 // services/auth.service.js
-const { v4: uuidv4 } = require('uuid');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { findUserByEmail, createUser, createDefaultWorkspace } = require('../models/user.model');
-const { validateRegistrationInput } = require('../validators/auth.validator');
-const { generateToken } = require("../utils/generateToken");
+const { v4: uuidv4 } = require("uuid");
+const bcrypt = require("bcrypt");
+const {
+  findUserByEmail,
+  createUser,
+  createDefaultWorkspace,
+  sanitizeUser,
+} = require("../models/user.model");
+const {
+  validateRegistrationInput,
+  validateLoginInput,
+} = require("../validators/auth.validator");
+const { generateToken } = require("../utils/token");
+const { createError } = require("../utils/errors");
+
 const SALT_ROUNDS = 12;
-
-/**
- * Generate a signed JWT for the given user payload.
- *
- * @param {Object} payload - data to encode (e.g. { id, email })
- * @returns {string} signed JWT
- */
-
 
 /**
  * Register a new user.
@@ -26,29 +27,27 @@ const SALT_ROUNDS = 12;
  *  5. Create default workspace
  *  6. Issue JWT
  *
- * @param {Object} registrationData - { full_name, email, password }
+ * @param {{ name: string, email: string, password: string }} registrationData
  * @returns {Promise<{ token: string, user: Object }>}
  */
-const registerUser = async ({ full_name, email, password }) => {
+const registerUser = async ({ name, email, password }) => {
   // 1. Validate
-  validateRegistrationInput({ full_name, email, password });
+  validateRegistrationInput({ name, email, password });
 
   // 2. Email uniqueness
   const existing = await findUserByEmail(email);
   if (existing) {
-    const error = new Error('An account with this email already exists.');
-    error.statusCode = 409;
-    throw error;
+    throw createError("An account with this email already exists.", 409);
   }
 
   // 3. Hash password
   const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
-  // 4. Create user
+  // 4. Create user (RETURNING clause excludes password_hash)
   const userId = uuidv4();
   const user = await createUser({
     id: userId,
-    full_name: full_name.trim(),
+    name: name.trim(),
     email,
     password_hash,
   });
@@ -66,4 +65,48 @@ const registerUser = async ({ full_name, email, password }) => {
   return { token, user };
 };
 
-module.exports = { registerUser };
+/**
+ * Authenticate an existing user.
+ *
+ * Steps:
+ *  1. Validate input
+ *  2. Look up user by email
+ *  3. Verify password against stored hash
+ *  4. Issue JWT
+ *  5. Return sanitized user
+ *
+ * Both "user not found" and "wrong password" return the same 401 message
+ * to prevent user enumeration attacks.
+ *
+ * @param {{ email: string, password: string }} credentials
+ * @returns {Promise<{ token: string, user: Object }>}
+ */
+const loginUser = async ({ email, password }) => {
+  // 1. Validate
+  validateLoginInput({ email, password });
+
+  // 2. Look up user — fetch full row so we have password_hash for comparison
+  const userRow = await findUserByEmail(email);
+
+  // 3. Verify — deliberate generic message to prevent user enumeration
+  const INVALID_CREDENTIALS_MSG = "Invalid email or password.";
+
+  if (!userRow) {
+    throw createError(INVALID_CREDENTIALS_MSG, 401);
+  }
+
+  const passwordMatch = await bcrypt.compare(password, userRow.password_hash);
+  if (!passwordMatch) {
+    throw createError(INVALID_CREDENTIALS_MSG, 401);
+  }
+
+  // 4. Generate JWT
+  const token = generateToken({ id: userRow.id, email: userRow.email });
+
+  // 5. Strip password_hash before returning
+  const user = sanitizeUser(userRow);
+
+  return { token, user };
+};
+
+module.exports = { registerUser, loginUser };

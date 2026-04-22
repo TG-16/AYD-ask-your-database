@@ -1,17 +1,17 @@
 // routes/auth.routes.js
 const { Router } = require('express');
-const { register } = require('../controllers/auth.controller');
+const { register, login } = require('../controllers/auth.controller');
 
 const router = Router();
 
 /**
  * @route   POST /api/auth/register
- * @desc    Register a new user and return a JWT
+ * @desc    Create a new account and return a JWT
  * @access  Public
  *
  * Body:
  *   full_name  {string} required
- *   email      {string} required – must be a valid email
+ *   email      {string} required – valid email format
  *   password   {string} required – minimum 8 characters
  *
  * Responses:
@@ -21,6 +21,23 @@ const router = Router();
  *   500  { success: false, message: "An unexpected error occurred. Please try again later." }
  */
 router.post('/register', register);
+
+/**
+ * @route   POST /api/auth/login
+ * @desc    Authenticate an existing user and return a JWT
+ * @access  Public
+ *
+ * Body:
+ *   email     {string} required – valid email format
+ *   password  {string} required
+ *
+ * Responses:
+ *   200  { success: true, message: "Login successful", token, user }
+ *   400  { success: false, message: "<validation error>" }
+ *   401  { success: false, message: "Invalid email or password." }
+ *   500  { success: false, message: "An unexpected error occurred. Please try again later." }
+ */
+router.post('/login', login);
 
 module.exports = router;
 
