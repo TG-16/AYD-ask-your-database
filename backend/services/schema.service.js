@@ -1,5 +1,9 @@
 const { v4: uuidv4 } = require("uuid"); // Your existing module
-const { executeCreateTable, alterTableAddMultipleColumns } = require("../models/schema.model");
+const { executeCreateTable, alterTableAddMultipleColumns,
+  renameTable, renameColumn, renameColumnIfExists, 
+  changeColumnType, addVectorColumn, dropColumnIfExists, 
+  checkColumnExists,
+ } = require("../models/schema.model");
 const { tableCreationValidator, validateColumnDefinitions } = require("../validators/schema.validator");
 const { createError } = require("../utils/errors");
 const { getPhysicalTableName } = require("../utils/tenant");
@@ -74,4 +78,55 @@ const createColumnsService = async ({ workspaceId, tableName, columns }) => {
   }
 };
 
-module.exports = { createNewTable, createColumnsService };
+
+// Singleton for Transformers
+let extractor;
+const getExtractor = async () => {
+  if (!extractor) extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+  return extractor;
+};
+
+/**
+ * API 1: Rename Table
+ */
+const renameTableService = async (workspaceId, oldName, newName) => {
+  if (!newName.match(/^[a-zA-Z0-9_]+$/)) throw createError("Invalid new table name", 400);
+  const oldPhysical = getPhysicalTableName(workspaceId, oldName);
+  const newPhysical = getPhysicalTableName(workspaceId, newName);
+  return await renameTable(oldPhysical, newPhysical);
+};
+
+/**
+ * API 2: Update Column Property
+ */
+const updateColumnService = async (workspaceId, body) => {
+  const { tableName, oldColumnName, newColumnName, newDataType, isVector } = body;
+  const physicalTable = getPhysicalTableName(workspaceId, tableName);
+  
+  const typeMap = { "STRING": "TEXT", "NUMBER": "NUMERIC", "INTEGER": "INTEGER", "BOOLEAN": "BOOLEAN", "DATE": "DATE" };
+  const pgType = typeMap[newDataType];
+
+  // 1. Rename logic
+  if (newColumnName && newColumnName !== oldColumnName) {
+    await renameColumn(physicalTable, oldColumnName, newColumnName);
+    // If a vector column exists, rename it too
+    await renameColumnIfExists(physicalTable, `${oldColumnName}_vector`, `${newColumnName}_vector`);
+  }
+
+  // 2. Type change logic
+  if (pgType) {
+    const targetCol = newColumnName || oldColumnName;
+    await changeColumnType(physicalTable, targetCol, pgType);
+  }
+
+  // 3. Vector Flag logic
+  const targetCol = newColumnName || oldColumnName;
+  if (isVector === true) {
+    await addVectorColumn(physicalTable, targetCol);
+  } else if (isVector === false) {
+    await dropColumnIfExists(physicalTable, `${targetCol}_vector`);
+  }
+};
+
+
+module.exports = { createNewTable, createColumnsService, renameTableService, updateColumnService };

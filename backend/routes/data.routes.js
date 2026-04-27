@@ -4,7 +4,8 @@ const {
     insertData,
     getTables, 
     getTableColumns, 
-    getTableData 
+    getTableData,
+    updateRow
  } = require("../controllers/data.controller");
 const { authenticateUser } = require("../middleware/auth.middleware"); // Assuming this exists
 
@@ -20,5 +21,9 @@ router.get("/columns", authenticateUser, getTableColumns);
 
 // GET /api/data/table/:tableName - Get rows for a specific table
 router.get("/table/:tableName", authenticateUser, getTableData);
+
+
+// Data Updates
+router.patch("/row", authenticateUser, updateRow);
 
 module.exports = router;

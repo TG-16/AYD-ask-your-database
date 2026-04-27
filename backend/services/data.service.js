@@ -3,7 +3,9 @@ const {
   fetchTablesByPrefix,
   fetchColumnsByPrefix,
   fetchRowsPaginated,
+  updateRow
 } = require("../models/data.model");
+const {checkColumnExists} = require("../models/schema.model");
 const { getPhysicalTableName } = require("../utils/tenant");
 const { createError } = require("../utils/errors");
 const { pipeline } = require("@xenova/transformers");
@@ -155,9 +157,35 @@ const getTableRows = async ({ workspaceId, tableName, page, limit }) => {
   };
 };
 
+
+/**
+ * API 3: Update Row with Vector Sync
+ */
+const updateRowService = async (workspaceId, { tableName, rowId, data }) => {
+  const physicalTable = getPhysicalTableName(workspaceId, tableName);
+  const generateEmbedding = await getExtractor();
+  
+  const finalUpdateData = { ...data };
+
+  // Check if any updated field has a corresponding vector column in the DB
+  for (const [key, value] of Object.entries(data)) {
+    const vectorColName = `${key}_vector`;
+    const hasVector = await checkColumnExists(physicalTable, vectorColName);
+    
+    if (hasVector && typeof value === 'string') {
+      const output = await generateEmbedding(value, { pooling: 'mean', normalize: true });
+      finalUpdateData[vectorColName] = JSON.stringify(Array.from(output.data));
+    }
+  }
+
+  //should remove the vector section out of the response
+  return await updateRow(physicalTable, rowId, finalUpdateData);
+};
+
 module.exports = {
   insertBulkService,
   listWorkspaceTables,
   listWorkspaceColumns,
   getTableRows,
+  updateRowService
 };

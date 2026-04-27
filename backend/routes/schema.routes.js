@@ -3,6 +3,8 @@ const router = express.Router();
 const { 
     createTable,
     addColumns,
+    renameTable,
+    updateColumn
  } = require("../controllers/schema.controller");
 const { authenticateUser } = require("../middleware/auth.middleware");
 
@@ -11,6 +13,8 @@ const { authenticateUser } = require("../middleware/auth.middleware");
 router.post("/table", authenticateUser, createTable);
 router.post("/columns", authenticateUser, addColumns);
 
-
+// Schema Updates
+router.patch("/table-name", authenticateUser, renameTable);
+router.patch("/column", authenticateUser, updateColumn);
 
 module.exports = router;

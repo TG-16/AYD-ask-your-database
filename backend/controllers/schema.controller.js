@@ -1,6 +1,9 @@
 const { 
   createNewTable,
-createColumnsService } = require("../services/schema.service");
+createColumnsService,
+renameTableService,
+updateColumnService
+ } = require("../services/schema.service");
 
 /**
  * Handles error responses consistent with your auth controller.
@@ -64,8 +67,32 @@ const addColumns = async (req, res) => {
 };
 
 
+const renameTable = async (req, res) => {
+  try {
+    const { oldTableName, newTableName } = req.body;
+    const { workspaceId } = req.user;
+    await renameTableService(workspaceId, oldTableName, newTableName);
+    return res.status(200).json({ success: true, message: "Table renamed successfully" });
+  } catch (error) {
+    return handleError(error, res, "renameTable");
+  }
+};
+
+const updateColumn = async (req, res) => {
+  try {
+    const { workspaceId } = req.user;
+    await updateColumnService(workspaceId, req.body);
+    return res.status(200).json({ success: true, message: "Column updated successfully" });
+  } catch (error) {
+    return handleError(error, res, "updateColumn");
+  }
+};
+
+
 
 module.exports = { 
   createTable,
-addColumns
+  addColumns,
+  renameTable,
+  updateColumn
  };

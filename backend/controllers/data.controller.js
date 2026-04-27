@@ -3,6 +3,7 @@ const {
   listWorkspaceTables,
   listWorkspaceColumns,
   getTableRows,
+  updateRowService
 } = require("../services/data.service");
 
 const handleError = (error, res, label) => {
@@ -78,4 +79,15 @@ const getTableData = async (req, res) => {
   }
 };
 
-module.exports = { insertData, getTables, getTableColumns, getTableData };
+
+const updateRow = async (req, res) => {
+  try {
+    const { workspaceId } = req.user;
+    const updatedData = await updateRowService(workspaceId, req.body);
+    return res.status(200).json({ success: true, data: updatedData });
+  } catch (error) {
+    return handleError(error, res, "updateRow");
+  }
+};
+
+module.exports = { insertData, getTables, getTableColumns, getTableData, updateRow };

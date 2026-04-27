@@ -112,4 +112,22 @@ const fetchRowsPaginated = async (physicalName, limit, offset) => {
   }
 };
 
-module.exports = { insertBulkIntoTable, fetchTablesByPrefix, fetchColumnsByPrefix, fetchRowsPaginated };
+
+const updateRow = async (table, rowId, data) => {
+  const keys = Object.keys(data);
+  const values = Object.values(data);
+  
+  const setClause = keys.map((key, i) => `"${key}" = $${i + 1}`).join(", ");
+  
+  const query = `
+    UPDATE "${table}"
+    SET ${setClause}
+    WHERE id = $${keys.length + 1}
+    RETURNING *;
+  `;
+
+  const result = await pool.query(query, [...values, rowId]);
+  return result.rows[0];
+};
+
+module.exports = { insertBulkIntoTable, fetchTablesByPrefix, fetchColumnsByPrefix, fetchRowsPaginated, updateRow };

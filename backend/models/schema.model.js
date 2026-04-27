@@ -51,4 +51,51 @@ const alterTableAddMultipleColumns = async (physicalName, columnDefinitions) => 
   }
 };
 
-module.exports = { executeCreateTable, alterTableAddMultipleColumns };
+
+
+const renameTable = async (oldName, newName) => {
+  // PostgreSQL: RENAME TO does not take the full path, just the new name
+  const rawNewName = newName.split('.').pop(); 
+  return await pool.query(`ALTER TABLE "${oldName}" RENAME TO "${rawNewName}";`);
+};
+
+const renameColumn = async (table, oldCol, newCol) => {
+  return await pool.query(`ALTER TABLE "${table}" RENAME COLUMN "${oldCol}" TO "${newCol}";`);
+};
+
+const renameColumnIfExists = async (table, oldCol, newCol) => {
+  const check = await pool.query(
+    "SELECT 1 FROM information_schema.columns WHERE table_name=$1 AND column_name=$2", 
+    [table, oldCol]
+  );
+  if (check.rowCount > 0) {
+    await pool.query(`ALTER TABLE "${table}" RENAME COLUMN "${oldCol}" TO "${newCol}";`);
+  }
+};
+
+const changeColumnType = async (table, col, type) => {
+  return await pool.query(`ALTER TABLE "${table}" ALTER COLUMN "${col}" TYPE ${type} USING "${col}"::${type};`);
+};
+
+const addVectorColumn = async (table, baseCol) => {
+  await pool.query(`CREATE EXTENSION IF NOT EXISTS vector;`);
+  return await pool.query(`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "${baseCol}_vector" vector(384);`);
+};
+
+const dropColumnIfExists = async (table, col) => {
+  return await pool.query(`ALTER TABLE "${table}" DROP COLUMN IF EXISTS "${col}";`);
+};
+
+const checkColumnExists = async (table, col) => {
+  const res = await pool.query(
+    "SELECT 1 FROM information_schema.columns WHERE table_name=$1 AND column_name=$2", 
+    [table, col]
+  );
+  return res.rowCount > 0;
+};
+
+module.exports = { executeCreateTable, alterTableAddMultipleColumns,
+  renameTable, renameColumn, renameColumnIfExists, 
+  changeColumnType, addVectorColumn, dropColumnIfExists, 
+  checkColumnExists,
+ };
