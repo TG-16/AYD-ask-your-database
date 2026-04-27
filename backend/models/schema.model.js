@@ -23,4 +23,27 @@ const executeCreateTable = async (physicalName) => {
   }
 };
 
-module.exports = { executeCreateTable };
+/**
+ * Adds multiple columns in a single SQL execution.
+ * @param {string} physicalName
+ * @param {string} columnDefinitions - Comma-separated ADD COLUMN clauses
+ */
+const alterTableAddMultipleColumns = async (
+  physicalName,
+  columnDefinitions,
+) => {
+  // Example of final query:
+  // ALTER TABLE "tenant_123_products" ADD COLUMN "price" NUMERIC, ADD COLUMN "desc" TEXT;
+  const query = `ALTER TABLE "${physicalName}" ${columnDefinitions};`;
+
+  try {
+    await pool.query(query);
+  } catch (error) {
+    console.error(`[schema.model] Batch column addition failed:`, error);
+    // Attach status code for the controller's handleError
+    error.statusCode = 400;
+    throw error;
+  }
+};
+
+module.exports = { executeCreateTable, alterTableAddMultipleColumns };

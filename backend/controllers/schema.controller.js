@@ -1,4 +1,6 @@
-const { createNewTable } = require("../services/schema.service");
+const { 
+  createNewTable,
+createColumnsService } = require("../services/schema.service");
 
 /**
  * Handles error responses consistent with your auth controller.
@@ -36,4 +38,34 @@ const createTable = async (req, res) => {
   }
 };
 
-module.exports = { createTable };
+
+
+// const handleError = (error, res, label) => {
+//   const statusCode = error.statusCode || 500;
+//   const message = statusCode >= 500 ? "Internal server error" : error.message;
+//   if (statusCode >= 500) console.error(`[schema.controller] ${label}:`, error);
+//   return res.status(statusCode).json({ success: false, message });
+// };
+
+const addColumns = async (req, res) => {
+  try {
+    const { tableName, columns } = req.body;
+    const { workspaceId } = req.user;
+
+    await createColumnsService({ workspaceId, tableName, columns });
+
+    return res.status(200).json({
+      success: true,
+      message: "Columns added successfully"
+    });
+  } catch (error) {
+    return handleError(error, res, "addColumns");
+  }
+};
+
+
+
+module.exports = { 
+  createTable,
+addColumns
+ };
