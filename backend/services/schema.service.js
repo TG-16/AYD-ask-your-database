@@ -31,34 +31,47 @@ const createNewTable = async ({ tableName, workspaceId }) => {
  * Maps frontend types to PostgreSQL types.
  */
 const mapType = (col) => {
-  if (col.isVector && col.type === "VECTOR") return "vector(1536)";
+  // Mapping standard types to Postgres types
   const typeMap = {
     "STRING": "TEXT",
     "NUMBER": "NUMERIC",
     "INTEGER": "INTEGER",
     "BOOLEAN": "BOOLEAN",
-    "DATE": "DATE"
+    "DATE": "DATE",
+    "VECTOR": "vector(384)" // Adjusted to 384 to match MiniLM dimensions
   };
-  return typeMap[col.type];
+  return typeMap[col.type] || "TEXT";
 };
 
 const createColumnsService = async ({ workspaceId, tableName, columns }) => {
-  // 1. Validation
   validateColumnDefinitions(columns);
-
-  // 2. Resolve physical table name
   const physicalName = getPhysicalTableName(workspaceId, tableName);
 
-  // 3. Build the SQL fragment for all columns
-  // Result format: ADD COLUMN "col1" TYPE, ADD COLUMN "col2" TYPE...
-  const columnDefinitions = columns.map(col => {
+  const finalDefinitions = [];
+
+  columns.forEach(col => {
     const pgType = mapType(col);
     const constraints = col.isPrimary ? "PRIMARY KEY" : "";
-    return `ADD COLUMN IF NOT EXISTS "${col.name}" ${pgType} ${constraints}`;
-  }).join(", ");
+    
+    // 1. Add the base column (e.g., "product_name")
+    // If the type was passed as "VECTOR", we still create the base column as TEXT 
+    // to store the original human-readable content.
+    const baseType = col.type === "VECTOR" ? "TEXT" : pgType;
+    finalDefinitions.push(`ADD COLUMN IF NOT EXISTS "${col.name}" ${baseType} ${constraints}`);
 
-  // 4. Single call to the model
-  await alterTableAddMultipleColumns(physicalName, columnDefinitions);
+    // 2. If isVector is true, create the twin vector column (e.g., "product_name_vector")
+    if (col.isVector === true) {
+      // We use vector(384) for MiniLM. If you use OpenAI, change to 1536.
+      finalDefinitions.push(`ADD COLUMN IF NOT EXISTS "${col.name}_vector" vector(384)`);
+    }
+  });
+
+  const columnSQL = finalDefinitions.join(", ");
+  
+  // Only execute if we actually have columns to add
+  if (finalDefinitions.length > 0) {
+    await alterTableAddMultipleColumns(physicalName, columnSQL);
+  }
 };
 
 module.exports = { createNewTable, createColumnsService };

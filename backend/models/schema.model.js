@@ -25,23 +25,28 @@ const executeCreateTable = async (physicalName) => {
 
 /**
  * Adds multiple columns in a single SQL execution.
- * @param {string} physicalName
- * @param {string} columnDefinitions - Comma-separated ADD COLUMN clauses
  */
-const alterTableAddMultipleColumns = async (
-  physicalName,
-  columnDefinitions,
-) => {
-  // Example of final query:
-  // ALTER TABLE "tenant_123_products" ADD COLUMN "price" NUMERIC, ADD COLUMN "desc" TEXT;
-  const query = `ALTER TABLE "${physicalName}" ${columnDefinitions};`;
-
+const alterTableAddMultipleColumns = async (physicalName, columnDefinitions) => {
   try {
+    // Ensure pgvector extension is active in case this is the first vector column
+    if (columnDefinitions.includes("vector(")) {
+      await pool.query(`CREATE EXTENSION IF NOT EXISTS vector;`);
+    }
+
+    const query = `ALTER TABLE "${physicalName}" ${columnDefinitions};`;
     await pool.query(query);
+    
   } catch (error) {
     console.error(`[schema.model] Batch column addition failed:`, error);
-    // Attach status code for the controller's handleError
-    error.statusCode = 400;
+    
+    // Handle specific case where table might not exist
+    if (error.code === '42P01') {
+      error.message = "The target table does not exist.";
+      error.statusCode = 404;
+    } else {
+      error.statusCode = 400;
+    }
+    
     throw error;
   }
 };

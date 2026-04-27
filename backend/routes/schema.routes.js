@@ -4,7 +4,7 @@ const {
     createTable,
     addColumns,
  } = require("../controllers/schema.controller");
-const { authenticateUser } = require("../middleware/auth.middleware"); // Assuming this exists
+const { authenticateUser } = require("../middleware/auth.middleware");
 
 // POST /api/schema/table
 // Protected route: sets req.user.workspaceId
