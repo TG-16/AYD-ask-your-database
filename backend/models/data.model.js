@@ -130,4 +130,23 @@ const updateRow = async (table, rowId, data) => {
   return result.rows[0];
 };
 
-module.exports = { insertBulkIntoTable, fetchTablesByPrefix, fetchColumnsByPrefix, fetchRowsPaginated, updateRow };
+/**
+ * Deletes a row by UUID.
+ */
+const deleteRowById = async (physicalName, rowId) => {
+  const query = `DELETE FROM "${physicalName}" WHERE id = $1;`;
+  try {
+    const result = await pool.query(query, [rowId]);
+    return result.rowCount;
+  } catch (error) {
+    console.error(`[delete.model] Delete Row Error:`, error);
+    if (error.code === '42P01') {
+      const err = new Error("Table not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    throw error;
+  }
+};
+
+module.exports = { insertBulkIntoTable, fetchTablesByPrefix, fetchColumnsByPrefix, fetchRowsPaginated, updateRow, deleteRowById };

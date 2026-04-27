@@ -2,7 +2,9 @@ const {
   createNewTable,
 createColumnsService,
 renameTableService,
-updateColumnService
+updateColumnService,
+deleteTableService,
+deleteColumnService,
  } = require("../services/schema.service");
 
 /**
@@ -89,10 +91,38 @@ const updateColumn = async (req, res) => {
 };
 
 
+const deleteTable = async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    const { workspaceId } = req.user;
+
+    await deleteTableService(workspaceId, tableName);
+
+    return res.status(200).json({ success: true, message: "Table deleted successfully" });
+  } catch (error) {
+    return handleError(error, res, "deleteTable");
+  }
+};
+
+const deleteColumn = async (req, res) => {
+  try {
+    const { tableName, columnName } = req.body;
+    const { workspaceId } = req.user;
+
+    await deleteColumnService(workspaceId, tableName, columnName);
+
+    return res.status(200).json({ success: true, message: "Column deleted successfully" });
+  } catch (error) {
+    return handleError(error, res, "deleteColumn");
+  }
+};
+
 
 module.exports = { 
   createTable,
   addColumns,
   renameTable,
-  updateColumn
+  updateColumn,
+  deleteTable,
+  deleteColumn
  };

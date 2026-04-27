@@ -3,6 +3,7 @@ const { executeCreateTable, alterTableAddMultipleColumns,
   renameTable, renameColumn, renameColumnIfExists, 
   changeColumnType, addVectorColumn, dropColumnIfExists, 
   checkColumnExists,
+  dropTable, dropColumn,
  } = require("../models/schema.model");
 const { tableCreationValidator, validateColumnDefinitions } = require("../validators/schema.validator");
 const { createError } = require("../utils/errors");
@@ -129,4 +130,24 @@ const updateColumnService = async (workspaceId, body) => {
 };
 
 
-module.exports = { createNewTable, createColumnsService, renameTableService, updateColumnService };
+
+const deleteTableService = async (workspaceId, tableName) => {
+  const physicalName = getPhysicalTableName(workspaceId, tableName);
+  return await dropTable(physicalName);
+};
+
+const deleteColumnService = async (workspaceId, tableName, columnName) => {
+  if (!columnName) throw createError("Column name is required.", 400);
+  
+  const physicalName = getPhysicalTableName(workspaceId, tableName);
+
+  // 1. Delete the primary column
+  await dropColumn(physicalName, columnName);
+
+  // 2. Automatically attempt to delete the shadow vector column
+  const vectorColName = `${columnName}_vector`;
+  await dropColumnIfExists(physicalName, vectorColName);
+};
+
+
+module.exports = { createNewTable, createColumnsService, renameTableService, updateColumnService, deleteTableService, deleteColumnService };

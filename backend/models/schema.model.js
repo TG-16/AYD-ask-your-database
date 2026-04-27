@@ -94,8 +94,44 @@ const checkColumnExists = async (table, col) => {
   return res.rowCount > 0;
 };
 
+
+/**
+ * Drops an entire table.
+ */
+const dropTable = async (physicalName) => {
+  const query = `DROP TABLE IF EXISTS "${physicalName}";`;
+  try {
+    await pool.query(query);
+  } catch (error) {
+    console.error(`[delete.model] Drop Table Error:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Drops a specific column.
+ */
+const dropColumn = async (physicalName, columnName) => {
+  const query = `ALTER TABLE "${physicalName}" DROP COLUMN IF EXISTS "${columnName}";`;
+  try {
+    await pool.query(query);
+  } catch (error) {
+    // 42703 is the PG code for 'column does not exist'
+    if (error.code !== '42703') throw error;
+  }
+};
+
+/**
+ * Drops a column only if it exists (used for vector cleanup).
+ */
+// const dropColumnIfExists = async (physicalName, columnName) => {
+//   const query = `ALTER TABLE "${physicalName}" DROP COLUMN IF EXISTS "${columnName}";`;
+//   await pool.query(query);
+// };
+
 module.exports = { executeCreateTable, alterTableAddMultipleColumns,
   renameTable, renameColumn, renameColumnIfExists, 
   changeColumnType, addVectorColumn, dropColumnIfExists, 
   checkColumnExists,
+  dropTable, dropColumn,
  };

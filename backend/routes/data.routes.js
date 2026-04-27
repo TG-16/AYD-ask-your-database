@@ -5,7 +5,8 @@ const {
     getTables, 
     getTableColumns, 
     getTableData,
-    updateRow
+    updateRow,
+    deleteRow
  } = require("../controllers/data.controller");
 const { authenticateUser } = require("../middleware/auth.middleware"); // Assuming this exists
 
@@ -25,5 +26,8 @@ router.get("/table/:tableName", authenticateUser, getTableData);
 
 // Data Updates
 router.patch("/row", authenticateUser, updateRow);
+
+// Data deletions
+router.delete("/row", authenticateUser, deleteRow);
 
 module.exports = router;

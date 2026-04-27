@@ -3,7 +3,8 @@ const {
   fetchTablesByPrefix,
   fetchColumnsByPrefix,
   fetchRowsPaginated,
-  updateRow
+  updateRow,
+  deleteRowById
 } = require("../models/data.model");
 const {checkColumnExists} = require("../models/schema.model");
 const { getPhysicalTableName } = require("../utils/tenant");
@@ -182,10 +183,23 @@ const updateRowService = async (workspaceId, { tableName, rowId, data }) => {
   return await updateRow(physicalTable, rowId, finalUpdateData);
 };
 
+
+const deleteRowService = async (workspaceId, tableName, rowId) => {
+  if (!rowId) throw createError("Row ID is required.", 400);
+  
+  const physicalName = getPhysicalTableName(workspaceId, tableName);
+  const deletedCount = await deleteRowById(physicalName, rowId);
+
+  if (deletedCount === 0) {
+    throw createError("Row not found or already deleted.", 404);
+  }
+};
+
 module.exports = {
   insertBulkService,
   listWorkspaceTables,
   listWorkspaceColumns,
   getTableRows,
-  updateRowService
+  updateRowService,
+  deleteRowService
 };

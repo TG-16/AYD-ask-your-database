@@ -3,7 +3,8 @@ const {
   listWorkspaceTables,
   listWorkspaceColumns,
   getTableRows,
-  updateRowService
+  updateRowService,
+  deleteRowService,
 } = require("../services/data.service");
 
 const handleError = (error, res, label) => {
@@ -79,7 +80,6 @@ const getTableData = async (req, res) => {
   }
 };
 
-
 const updateRow = async (req, res) => {
   try {
     const { workspaceId } = req.user;
@@ -90,4 +90,26 @@ const updateRow = async (req, res) => {
   }
 };
 
-module.exports = { insertData, getTables, getTableColumns, getTableData, updateRow };
+const deleteRow = async (req, res) => {
+  try {
+    const { tableName, rowId } = req.body;
+    const { workspaceId } = req.user;
+
+    await deleteRowService(workspaceId, tableName, rowId);
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Row deleted successfully" });
+  } catch (error) {
+    return handleError(error, res, "deleteRow");
+  }
+};
+
+module.exports = {
+  insertData,
+  getTables,
+  getTableColumns,
+  getTableData,
+  updateRow,
+  deleteRow,
+};
