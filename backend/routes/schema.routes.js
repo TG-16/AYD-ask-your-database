@@ -11,4 +11,6 @@ const { authenticateUser } = require("../middleware/auth.middleware");
 router.post("/table", authenticateUser, createTable);
 router.post("/columns", authenticateUser, addColumns);
 
+
+
 module.exports = router;
